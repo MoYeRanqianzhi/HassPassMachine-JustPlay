@@ -1,0 +1,53 @@
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: ubuntu-latest
+            target: x86_64-unknown-linux-gnu
+            binary: hashpass-machine
+            suffix: x86_64-linux
+          - platform: windows-latest
+            target: x86_64-pc-windows-msvc
+            binary: hashpass-machine.exe
+            suffix: x86_64-windows.exe
+          - platform: macos-latest
+            target: aarch64-apple-darwin
+            binary: hashpass-machine
+            suffix: aarch64-macos
+          - platform: macos-latest
+            target: x86_64-apple-darwin
+            binary: hashpass-machine
+            suffix: x86_64-macos
+
+    runs-on: ${{ matrix.platform }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+
+      - name: Build
+        run: cargo build --release --target ${{ matrix.target }}
+
+      - name: Upload
+        shell: bash
+        run: |
+          mkdir upload
+          cp "target/${{ matrix.target }}/release/${{ matrix.binary }}" "upload/hashpass-machine_${{ github.ref_name }}_${{ matrix.suffix }}"
+
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: upload/*
