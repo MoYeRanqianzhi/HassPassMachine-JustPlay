@@ -47,7 +47,39 @@ jobs:
         run: |
           mkdir upload
           cp "target/${{ matrix.target }}/release/${{ matrix.binary }}" "upload/hashpass-machine_${{ github.ref_name }}_${{ matrix.suffix }}"
+          if [ "${{ matrix.target }}" = "x86_64-unknown-linux-gnu" ]; then cp bridge.js upload/bridge.js; fi
+
+      - name: Read bridge.js content
+        if: matrix.target == 'x86_64-unknown-linux-gnu'
+        id: bridge_js
+        shell: bash
+        run: |
+          {
+            echo 'content<<EOF'
+            cat bridge.js
+            echo 'EOF'
+          } >> "$GITHUB_OUTPUT"
 
       - uses: softprops/action-gh-release@v2
+        if: matrix.target == 'x86_64-unknown-linux-gnu'
+        with:
+          body: |
+            ## 使用说明
+            1. 下载并运行对应平台的可执行文件。
+            2. 打开浏览器开发者工具（`F12`）并切换到 `Console`。
+            3. 将下方 `bridge.js` 内容完整粘贴到 `Console` 并运行。
+
+            <details>
+            <summary>bridge.js 内容（点击展开）</summary>
+
+            ```javascript
+            ${{ steps.bridge_js.outputs.content }}
+            ```
+
+            </details>
+          files: upload/*
+
+      - uses: softprops/action-gh-release@v2
+        if: matrix.target != 'x86_64-unknown-linux-gnu'
         with:
           files: upload/*
