@@ -454,21 +454,24 @@ async fn handle_ws_connection(
                                 status_interval.reset();
                             }
                             Ok(ClientMsg::Stop) => {
-                                if let Some(mut job) = mining_job.take() {
+                                let (nonce, hash, zeros) = if let Some(mut job) = mining_job.take() {
                                     let elapsed = job.start_time.elapsed();
-                                    let (nonce, hash, zeros) = job.stop();
+                                    let result = job.stop();
                                     println!(
                                         "[*] 停止挖矿: best={}零 nonce={} 耗时={:.1}s",
-                                        zeros, nonce, elapsed.as_secs_f64(),
+                                        result.2, result.0, elapsed.as_secs_f64(),
                                     );
-                                    let msg = ServerMsg::Stopped {
-                                        best_nonce: nonce,
-                                        best_hash: hash,
-                                        best_leading_zeros: zeros,
-                                    };
-                                    let json = serde_json::to_string(&msg)?;
-                                    write.send(Message::Text(json.into())).await?;
-                                }
+                                    result
+                                } else {
+                                    (0, String::new(), 0)
+                                };
+                                let msg = ServerMsg::Stopped {
+                                    best_nonce: nonce,
+                                    best_hash: hash,
+                                    best_leading_zeros: zeros,
+                                };
+                                let json = serde_json::to_string(&msg)?;
+                                write.send(Message::Text(json.into())).await?;
                             }
                             Ok(ClientMsg::InviteCode { code }) => {
                                 save_invite_code(&code);
@@ -546,8 +549,8 @@ async fn handle_ws_connection(
 fn print_banner() {
     println!();
     println!("  ╔═══════════════════════════════════════════╗");
-    println!("  ║   HashPass Bridge — Rust 本地计算引擎      ║");
-    println!("  ║   等待浏览器 JS 桥接脚本连接               ║");
+    println!("  ║   HashPass Bridge — Rust 本地计算引擎     ║");
+    println!("  ║   等待浏览器 JS 桥接脚本连接              ║");
     println!("  ╚═══════════════════════════════════════════╝");
     println!();
 }

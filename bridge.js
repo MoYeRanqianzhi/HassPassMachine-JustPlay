@@ -299,17 +299,9 @@
         case "solution":
           log(`[Bridge] Rust 找到解! nonce=${data.nonce}`, "success");
           rustMining = false;
-          bridgeActive = false;
-          stopFakeHashrate();
-          resetHashRate();
-          serverSend({ type: "mining_stop" });
-          if (state.miningTimer) {
-            state.miningElapsed += Date.now() - state.miningStartTime;
-            clearInterval(state.miningTimer);
-            state.miningTimer = null;
-          }
-          updateRustButtons(false);
-          updateRustStatus("已找到解！");
+          // 保持 bridgeActive = true：等待 PUZZLE_RESET 自动重启下一轮
+          // 保持假算力上报、挖矿计时器运行（与原版行为一致）
+          updateRustStatus("已找到解！等待新谜题...");
           submitSolution(data.nonce, data.hash);
           break;
 
